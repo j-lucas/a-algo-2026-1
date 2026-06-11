@@ -1,0 +1,2 @@
+
+Dever NP difícil 
