@@ -1,0 +1,73 @@
+import random
+import math
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Simulação das funções que estão no 'nqueens_utils.py'
+# Caso o arquivo exista, basta importar: from nqueens_utils import ...
+def calcular_ataques(estado):
+    """Retorna o número de conflitos/ataques entre as rainhas (objetivo: 0)."""
+    ataques = 0
+    n = len(estado)
+    for i in range(n):
+        for j in range(i + 1, n):
+            if estado[i] == estado[j] or abs(estado[i] - estado[j]) == (j - i):
+                ataques += 1
+    return ataques
+
+def gerar_vizinho(estado):
+    """Gera um estado vizinho alterando a posição de uma rainha."""
+    vizinho = list(estado)
+    coluna = random.randint(0, len(estado) - 1)
+    nova_linha = random.randint(0, len(estado) - 1)
+    vizinho[coluna] = nova_linha
+    return vizinho
+
+# --- LOOP PRINCIPAL DO SIMULATED ANNEALING (~30 linhas) ---
+def simulated_annealing(n=12, t_inicial=100.0, alfa=0.95, max_iter=1000):
+    # Estado inicial aleatório (cada índice é uma coluna, o valor é a linha)
+    estado_atual = [random.randint(0, n-1) for _ in range(n)]
+    custo_atual = calcular_ataques(estado_atual)
+    
+    T = t_inicial
+    historico_convergencia = [custo_atual]
+    
+    for i in range(max_iter):
+        if custo_atual == 0 or T < 0.001:
+            # Completa o histórico caso pare antes por achar a solução ideal
+            historico_convergencia.extend([custo_atual] * (max_iter - len(historico_convergencia)))
+            break
+            
+        vizinho = gerar_vizinho(estado_atual)
+        custo_vizinho = calcular_ataques(vizinho)
+        
+        delta_e = custo_vizinho - custo_atual
+        
+        # Se o vizinho for melhor, aceita. Se pior, aceita com uma probabilidade
+        if delta_e < 0 or random.random() < math.exp(-delta_e / T):
+            estado_atual = vizinho
+            custo_atual = custo_vizinho
+            
+        T *= alfa  # Resfriamento geométrico
+        historico_convergencia.append(custo_atual)
+        
+    return estado_atual, custo_atual, historico_convergencia
+
+# Execução e plotagem rápida para gerar o gráfico exigido
+if __name__ == "__main__":
+    solucao, custo, hist_sa = simulated_annealing()
+    
+    # Simulação de uma curva de AG (Algoritmo Genético) para fins de comparação gráfica
+    # (Substitua pelos dados reais extraídos do seu AG anterior)
+    hist_ag = [int(15 * (0.98**i)) + random.randint(0,1) if i < 300 else 0 for i in range(1001)]
+    
+    plt.figure(figsize=(10, 5))
+    plt.plot(hist_sa, label='Simulated Annealing (SA)', color='orange')
+    plt.plot(hist_ag, label='Algoritmo Genético (AG)', color='blue')
+    plt.xlabel('Iterações / Gerações')
+    plt.ylabel('Número de Conflitos (Custo)')
+    plt.title('Curvas de Convergência: AG vs SA (12-Rainhas)')
+    plt.legend()
+    plt.grid(True)
+    plt.savefig('comparacao_convergencia.png') # Salva o gráfico exigido
+    plt.show()
